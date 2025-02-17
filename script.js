@@ -35,15 +35,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function to update active menu item
     function setActiveItem(index) {
-        menuItems.forEach(item => item.classList.remove('active'));
-        menuItems[index].classList.add('active');
-        menuItems[index].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        console.log('Setting active item:', index); // Debug log
         
-        // Send selected menu item to game
-        sendToGame('menuSelect', {
-            item: menuItems[index].querySelector('a').textContent.trim(),
-            index: index
-        });
+        // Remove active class from all items
+        menuItems.forEach(item => item.classList.remove('active'));
+        
+        // Add active class to selected item
+        if (menuItems[index]) {
+            menuItems[index].classList.add('active');
+            menuItems[index].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            
+            // Send selected menu item to game
+            sendToGame('menuSelect', {
+                item: menuItems[index].querySelector('a').textContent.trim(),
+                index: index
+            });
+        }
     }
 
     // Keyboard navigation
@@ -72,25 +79,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Handle messages from game
     window.addEventListener('message', function(event) {
+        console.log('Received message:', event.data); // Debug log
+        
         if (event.data.type === 'setActive') {
-            currentIndex = event.data.index;
-            setActiveItem(currentIndex);
-        } else if (event.data.type === 'keypress') {
-            console.log('Received keypress:', event.data.key); // Debug log
-            
-            // Handle key directly instead of simulating event
-            if (event.data.key === 'ArrowUp' && currentIndex > 0) {
-                currentIndex--;
+            // Ensure index is within bounds
+            const newIndex = Math.min(Math.max(0, event.data.index), menuItems.length - 1);
+            if (currentIndex !== newIndex) {
+                currentIndex = newIndex;
                 setActiveItem(currentIndex);
-            } else if (event.data.key === 'ArrowDown' && currentIndex < menuItems.length - 1) {
-                currentIndex++;
-                setActiveItem(currentIndex);
-            } else if (event.data.key === 'Enter') {
-                sendToGame('menuActivate', {
-                    item: menuItems[currentIndex].querySelector('a').textContent.trim(),
-                    index: currentIndex
-                });
+                console.log('Updated menu index to:', currentIndex);
             }
+        } else if (event.data.type === 'menuActivate') {
+            // Handle menu activation
+            sendToGame('menuActivate', {
+                item: menuItems[currentIndex].querySelector('a').textContent.trim(),
+                index: currentIndex
+            });
         }
     });
 
