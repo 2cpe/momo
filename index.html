@@ -1,29 +1,48 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Fun Menu</title>
-    <link rel="stylesheet" href="https://2cpe.github.io/momo/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mod Menu</title>
+    <style>
+        /* Your custom styles here */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #333;
+            color: #fff;
+        }
+        .menu {
+            padding: 20px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-    <div id="menu" class="menu-container">
-        <div class="menu-header">
-            <h1>Fun Menu</h1>
-            <button class="close-btn" id="closeMenu">×</button>
-        </div>
-        <div class="menu-content">
-            <div class="menu-section">
-                <h2>Vehicles</h2>
-                <button class="menu-button" data-vehicle="adder">Spawn Adder</button>
-                <button class="menu-button" data-vehicle="zentorno">Spawn Zentorno</button>
-                <button class="menu-button" data-vehicle="t20">Spawn T20</button>
-            </div>
-            <div class="menu-section">
-                <h2>Player</h2>
-                <button class="menu-button" id="reviveButton">Revive</button>
-            </div>
-        </div>
+    <div class="menu">
+        <h1>Mod Menu</h1>
+        <button id="godMode">God Mode</button>
+        <button id="teleport">Teleport</button>
     </div>
-    <script src="https://2cpe.github.io/momo/script.js"></script>
+    <script>
+        document.getElementById('godMode').addEventListener('click', function() {
+            // Send message to Lua script to toggle God Mode
+            parent.postMessage({ action: 'toggleGodMode', enabled: true }, '*');
+        });
+
+        document.getElementById('teleport').addEventListener('click', function() {
+            // Send message to Lua script to teleport
+            parent.postMessage({ action: 'teleport' }, '*');
+        });
+    </script>
 </body>
-</html> 
+</html>
