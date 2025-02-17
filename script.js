@@ -5,6 +5,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const menuItems = document.querySelectorAll('.menu li');
     let currentIndex = Array.from(menuItems).findIndex(item => item.classList.contains('active'));
     
+    // Function to send messages to Lua
+    function sendToGame(action, data) {
+        if (window.invokeNative) {
+            fetch(`https://${GetParentResourceName()}/${action}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+        }
+    }
+
     // Scrollbar update function
     function updateScrollbar() {
         const scrollPercentage = menu.scrollTop / (menu.scrollHeight - menu.clientHeight);
@@ -24,9 +37,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function setActiveItem(index) {
         menuItems.forEach(item => item.classList.remove('active'));
         menuItems[index].classList.add('active');
-        
-        // Scroll item into view if needed
         menuItems[index].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        
+        // Send selected menu item to game
+        sendToGame('menuSelect', {
+            item: menuItems[index].querySelector('a').textContent.trim(),
+            index: index
+        });
     }
 
     // Keyboard navigation
@@ -43,6 +60,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 currentIndex++;
                 setActiveItem(currentIndex);
             }
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            // Send selection confirmation to game
+            sendToGame('menuActivate', {
+                item: menuItems[currentIndex].querySelector('a').textContent.trim(),
+                index: currentIndex
+            });
+        }
+    });
+
+    // Handle messages from game
+    window.addEventListener('message', function(event) {
+        if (event.data.type === 'setActive') {
+            currentIndex = event.data.index;
+            setActiveItem(currentIndex);
         }
     });
 
