@@ -75,6 +75,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (event.data.type === 'setActive') {
             currentIndex = event.data.index;
             setActiveItem(currentIndex);
+        } else if (event.data.type === 'keypress') {
+            // Simulate keyboard event
+            const keyEvent = new KeyboardEvent('keydown', {
+                key: event.data.key,
+                bubbles: true
+            });
+            document.dispatchEvent(keyEvent);
         }
     });
 
