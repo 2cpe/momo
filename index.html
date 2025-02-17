@@ -3,46 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mod Menu</title>
-    <style>
-        /* Your custom styles here */
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #333;
-            color: #fff;
-        }
-        .menu {
-            padding: 20px;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 15px 32px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            margin: 4px 2px;
-            cursor: pointer;
-        }
-    </style>
+    <title>Silent Kill</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="menu">
-        <h1>Mod Menu</h1>
-        <button id="godMode">God Mode</button>
-        <button id="teleport">Teleport</button>
-    </div>
-    <script>
-        document.getElementById('godMode').addEventListener('click', function() {
-            // Send message to Lua script to toggle God Mode
-            parent.postMessage({ action: 'toggleGodMode', enabled: true }, '*');
-        });
+    <div class="menu-container">
+        <div class="logo">
+            <img src="s.png" alt="Logo">
+        </div>
+        
+        <nav class="menu">
+            <ul>
+                <li><a href="#">Self <span class="arrow">▶</span></a></li>
+                <li><a href="#">Online <span class="arrow">▶</span></a></li>
+                <li><a href="#">Destroyer <span class="arrow">▶</span></a></li>
+                <li><a href="#">Vehicle <span class="arrow">▶</span></a></li>
+                <li><a href="#">Weapon <span class="arrow">▶</span></a></li>
+                <li class="active"><a href="#">Visuals <span class="arrow">▶</span></a></li>
+                <li><a href="#">Misc <span class="arrow">▶</span></a></li>
+                <li><a href="#">Settings <span class="arrow">▶</span></a></li>
+            </ul>
+        </nav>
 
-        document.getElementById('teleport').addEventListener('click', function() {
-            // Send message to Lua script to teleport
-            parent.postMessage({ action: 'teleport' }, '*');
-        });
-    </script>
+        <div class="custom-scrollbar">
+            <div class="scrollbar-thumb"></div>
+        </div>
+
+        <div class="version">
+            <span>v Test</span>
+            <span class="username">Test</span>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
 </body>
-</html>
+</html> 

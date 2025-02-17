@@ -1,42 +1,26 @@
-window.addEventListener('message', function(event) {
-    if (event.data.type === 'showMenu') {
-        document.getElementById('menu').style.display = event.data.display ? 'block' : 'none';
+document.addEventListener('DOMContentLoaded', function() {
+    const menu = document.querySelector('.menu');
+    const scrollbarThumb = document.querySelector('.scrollbar-thumb');
+    const scrollbarTrack = document.querySelector('.custom-scrollbar');
+    
+    // Update scrollbar thumb height and position
+    function updateScrollbar() {
+        const scrollPercentage = menu.scrollTop / (menu.scrollHeight - menu.clientHeight);
+        const maxThumbHeight = scrollbarTrack.clientHeight - 20; // Account for padding
+        const thumbHeight = Math.min(
+            maxThumbHeight,
+            Math.max(40, (menu.clientHeight / menu.scrollHeight) * scrollbarTrack.clientHeight)
+        );
+        const maxPosition = scrollbarTrack.clientHeight - thumbHeight;
+        const thumbPosition = Math.min(maxPosition, (maxPosition) * scrollPercentage);
+        
+        scrollbarThumb.style.height = `${thumbHeight}px`;
+        scrollbarThumb.style.top = `${thumbPosition}px`;
     }
-});
 
-// Vehicle spawn buttons
-document.querySelectorAll('[data-vehicle]').forEach(button => {
-    button.addEventListener('click', function() {
-        fetch('http://menu/spawnVehicle', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: this.dataset.vehicle
-            })
-        });
-    });
-});
+    // Initial setup
+    updateScrollbar();
 
-// Revive button
-document.getElementById('reviveButton').addEventListener('click', function() {
-    fetch('http://menu/revive', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({})
-    });
-});
-
-// Close button
-document.getElementById('closeMenu').addEventListener('click', function() {
-    fetch('http://menu/closeMenu', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({})
-    });
+    // Update on scroll
+    menu.addEventListener('scroll', updateScrollbar);
 }); 
