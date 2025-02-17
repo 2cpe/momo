@@ -76,12 +76,21 @@ document.addEventListener('DOMContentLoaded', function() {
             currentIndex = event.data.index;
             setActiveItem(currentIndex);
         } else if (event.data.type === 'keypress') {
-            // Simulate keyboard event
-            const keyEvent = new KeyboardEvent('keydown', {
-                key: event.data.key,
-                bubbles: true
-            });
-            document.dispatchEvent(keyEvent);
+            console.log('Received keypress:', event.data.key); // Debug log
+            
+            // Handle key directly instead of simulating event
+            if (event.data.key === 'ArrowUp' && currentIndex > 0) {
+                currentIndex--;
+                setActiveItem(currentIndex);
+            } else if (event.data.key === 'ArrowDown' && currentIndex < menuItems.length - 1) {
+                currentIndex++;
+                setActiveItem(currentIndex);
+            } else if (event.data.key === 'Enter') {
+                sendToGame('menuActivate', {
+                    item: menuItems[currentIndex].querySelector('a').textContent.trim(),
+                    index: currentIndex
+                });
+            }
         }
     });
 
