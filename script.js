@@ -5,9 +5,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const menuItems = document.querySelectorAll('.menu li');
     let currentIndex = Array.from(menuItems).findIndex(item => item.classList.contains('active'));
     
-    // Function to send messages to Lua
+    const mainMenu = document.querySelector('.menu-main');
+    const selfMenu = document.querySelector('.self-menu');
+    let currentMenu = 'main';
+    
+    // Check if we're in FiveM
+    const isFiveM = window.invokeNative !== undefined;
+
+    // Function to send messages to Lua or handle web actions
     function sendToGame(action, data) {
-        if (window.invokeNative) {
+        if (isFiveM) {
             fetch(`https://${GetParentResourceName()}/${action}`, {
                 method: 'POST',
                 headers: {
@@ -15,6 +22,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 body: JSON.stringify(data)
             });
+        } else {
+            // Web handling
+            console.log('Web action:', action, data);
+            handleWebAction(action, data);
+        }
+    }
+
+    // Handle actions for web testing
+    function handleWebAction(action, data) {
+        switch(action) {
+            case 'menuSelect':
+                if (data.menu === 'self') {
+                    showMenu('self');
+                } else if (data.menu === 'main') {
+                    showMenu('main');
+                }
+                break;
+            case 'selfAction':
+                // Simulate self actions for web testing
+                const item = data.action;
+                if (item.includes('God Mode') || item.includes('Semi God Mode') || item.includes('No Ragdoll')) {
+                    const toggle = document.querySelector(`.self-menu li a:contains('${item}') .toggle-switch`);
+                    if (toggle) toggle.classList.toggle('active');
+                } else if (item.includes('Health') || item.includes('Armor')) {
+                    // Update value display for testing
+                    const display = document.querySelector(`.self-menu li a:contains('${item}') .value-display`);
+                    if (display) display.textContent = data.value;
+                }
+                break;
         }
     }
 
@@ -34,85 +70,125 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Function to update active menu item
-    function setActiveItem(index) {
+    function setActiveItem(index, items = menuItems) {
         console.log('Setting active item:', index);
         
-        requestAnimationFrame(() => {
-            menuItems.forEach((item, i) => {
-                if (i === index) {
-                    item.classList.add('active');
-                    item.style.backgroundColor = 'rgba(0, 102, 255, 0.2)';
-                    item.style.boxShadow = '0 0 15px rgba(0, 102, 255, 0.3)';
-                } else {
-                    item.classList.remove('active');
-                    item.style.backgroundColor = 'transparent';
-                    item.style.boxShadow = 'none';
-                }
+        // Remove active class from all items in both menus
+        document.querySelectorAll('.menu li').forEach(item => item.classList.remove('active'));
+        
+        if (items[index]) {
+            requestAnimationFrame(() => {
+                items[index].classList.add('active');
             });
             
-            if (menuItems[index]) {
-                menuItems[index].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            items[index].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            
+            if (isFiveM) {
+                sendToGame('menuSelect', {
+                    item: items[index].querySelector('a').textContent.trim(),
+                    index: index
+                });
             }
-        });
+        }
+    }
+
+    function showMenu(menuType) {
+        mainMenu.style.display = menuType === 'main' ? 'block' : 'none';
+        selfMenu.style.display = menuType === 'self' ? 'block' : 'none';
+        currentMenu = menuType;
+        
+        // Get the items of the current menu
+        const currentItems = menuType === 'main' ? 
+            mainMenu.querySelectorAll('li') : 
+            selfMenu.querySelectorAll('li');
+        
+        // Reset index when switching menus
+        currentIndex = 0;
+        setActiveItem(currentIndex, Array.from(currentItems));
+    }
+
+    // Modify menuActivate handler
+    function handleMenuActivate(item) {
+        if (currentMenu === 'main') {
+            if (item === 'Self') {
+                showMenu('self');
+                sendToGame('menuSelect', { menu: 'self' });
+            }
+        } else if (currentMenu === 'self') {
+            if (item === 'Back') {
+                showMenu('main');
+                sendToGame('menuSelect', { menu: 'main' });
+            } else {
+                // Handle self menu items
+                sendToGame('selfAction', {
+                    action: item,
+                    value: item.includes('Health') || item.includes('Armor') ? 100 : null
+                });
+            }
+        }
     }
 
     // Keyboard navigation
     document.addEventListener('keydown', function(e) {
+        const currentItems = currentMenu === 'main' ? 
+            mainMenu.querySelectorAll('li') : 
+            selfMenu.querySelectorAll('li');
+        
         if (e.key === 'ArrowUp') {
             e.preventDefault();
             if (currentIndex > 0) {
                 currentIndex--;
-                setActiveItem(currentIndex);
+                setActiveItem(currentIndex, Array.from(currentItems));
             }
         } else if (e.key === 'ArrowDown') {
             e.preventDefault();
-            if (currentIndex < menuItems.length - 1) {
+            if (currentIndex < currentItems.length - 1) {
                 currentIndex++;
-                setActiveItem(currentIndex);
+                setActiveItem(currentIndex, Array.from(currentItems));
             }
         } else if (e.key === 'Enter') {
             e.preventDefault();
-            // Send selection confirmation to game
-            sendToGame('menuActivate', {
-                item: menuItems[currentIndex].querySelector('a').textContent.trim(),
-                index: currentIndex
-            });
+            const activeItem = currentItems[currentIndex];
+            if (activeItem) {
+                const itemText = activeItem.querySelector('a').textContent.trim();
+                handleMenuActivate(itemText);
+            }
+        } else if (e.key === 'Backspace' && currentMenu === 'self') {
+            e.preventDefault();
+            showMenu('main');
         }
     });
 
     // Handle messages from game
     window.addEventListener('message', function(event) {
-        console.log('Received message:', event.data);
+        console.log('Received message:', event.data); // Debug log
         
         if (event.data.type === 'setActive') {
-            // Force a complete UI refresh
-            menuItems.forEach((item, i) => {
-                if (i === event.data.index) {
-                    item.classList.add('active');
-                    // Force immediate style update
-                    item.style.backgroundColor = 'rgba(0, 102, 255, 0.2)';
-                    item.style.boxShadow = '0 0 15px rgba(0, 102, 255, 0.3)';
-                    item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                    currentIndex = i; // Update current index
-                } else {
-                    item.classList.remove('active');
-                    item.style.backgroundColor = 'transparent';
-                    item.style.boxShadow = 'none';
-                }
-            });
+            // Force remove active class from all items first
+            menuItems.forEach(item => item.classList.remove('active'));
             
-            // Force a DOM reflow
-            menu.style.display = 'none';
-            menu.offsetHeight; // Force reflow
-            menu.style.display = '';
+            // Ensure index is within bounds
+            const newIndex = Math.min(Math.max(0, event.data.index), menuItems.length - 1);
+            currentIndex = newIndex;
             
-            console.log('Updated active item to:', event.data.index);
+            // Force add active class to new item
+            if (menuItems[currentIndex]) {
+                menuItems[currentIndex].classList.add('active');
+                menuItems[currentIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                
+                // Update styles immediately
+                requestAnimationFrame(() => {
+                    menuItems[currentIndex].classList.add('active');
+                });
+                
+                console.log('Updated menu index to:', currentIndex);
+            }
         } else if (event.data.type === 'menuActivate') {
-            // Handle menu activation
-            sendToGame('menuActivate', {
-                item: menuItems[currentIndex].querySelector('a').textContent.trim(),
-                index: currentIndex
-            });
+            const activeItem = menuItems[currentIndex];
+            if (activeItem) {
+                const itemText = activeItem.querySelector('a').textContent.trim();
+                handleMenuActivate(itemText);
+            }
         }
     });
 
