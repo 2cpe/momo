@@ -3,103 +3,119 @@ document.addEventListener('DOMContentLoaded', function() {
     const scrollbarThumb = document.querySelector('.scrollbar-thumb');
     const scrollbarTrack = document.querySelector('.custom-scrollbar');
     const menuItems = document.querySelectorAll('.menu li');
-    let currentIndex = 0;
+    let currentIndex = Array.from(menuItems).findIndex(item => item.classList.contains('active'));
     
-    const mainMenu = document.querySelector('.menu-main');
-    const selfMenu = document.querySelector('.self-menu');
-    let currentMenu = 'main';
-
-    // Game message handler
-    window.addEventListener('message', function(event) {
-        const data = event.data;
-        console.log('Received message:', data); // Debug log
-        
-        if (data.type === 'updateIndex') {
-            // Force update UI from game
-            const items = currentMenu === 'main' ? 
-                mainMenu.querySelectorAll('li') : 
-                selfMenu.querySelectorAll('li');
-            
-            // Remove active class from all items
-            document.querySelectorAll('.menu li').forEach(item => {
-                item.classList.remove('active');
-            });
-            
-            // Add active class to current item
-            if (items[data.index]) {
-                items[data.index].classList.add('active');
-                items[data.index].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                currentIndex = data.index;
-                console.log('Updated index to:', currentIndex); // Debug log
-            }
-        } else if (data.type === 'menuActivate') {
-            const items = currentMenu === 'main' ? 
-                mainMenu.querySelectorAll('li') : 
-                selfMenu.querySelectorAll('li');
-            
-            if (items[currentIndex]) {
-                const itemText = items[currentIndex].querySelector('a').textContent.trim();
-                if (itemText === 'Self') {
-                    currentMenu = 'self';
-                    mainMenu.style.display = 'none';
-                    selfMenu.style.display = 'block';
-                    currentIndex = 0;
-                } else if (itemText === 'Back') {
-                    currentMenu = 'main';
-                    selfMenu.style.display = 'none';
-                    mainMenu.style.display = 'block';
-                    currentIndex = 0;
-                }
-            }
-        }
-    });
-
-    // Game communication
-    function postMessage(action, data) {
+    // Function to send messages to Lua
+    function sendToGame(action, data) {
         if (window.invokeNative) {
             fetch(`https://${GetParentResourceName()}/${action}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(data)
-            }).catch(err => console.log('Error:', err));
+            });
         }
     }
 
-    // Update UI function
-    function updateUI(index) {
-        document.querySelectorAll('.menu li').forEach(item => item.classList.remove('active'));
-        const items = currentMenu === 'main' ? mainMenu.querySelectorAll('li') : selfMenu.querySelectorAll('li');
-        if (items[index]) {
-            items[index].classList.add('active');
-            items[index].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-    }
-
-    // Only handle keyboard events if they come from game
-    window.addEventListener('keydown', function(e) {
-        e.preventDefault(); // Prevent default keyboard handling
-    });
-
-    // Handle scrollbar
+    // Scrollbar update function
     function updateScrollbar() {
-        if (!menu || !scrollbarThumb) return;
-        
         const scrollPercentage = menu.scrollTop / (menu.scrollHeight - menu.clientHeight);
-        const thumbHeight = Math.max(40, (menu.clientHeight / menu.scrollHeight) * scrollbarTrack.clientHeight);
+        const maxThumbHeight = scrollbarTrack.clientHeight - 20;
+        const thumbHeight = Math.min(
+            maxThumbHeight,
+            Math.max(40, (menu.clientHeight / menu.scrollHeight) * scrollbarTrack.clientHeight)
+        );
         const maxPosition = scrollbarTrack.clientHeight - thumbHeight;
-        const thumbPosition = maxPosition * scrollPercentage;
+        const thumbPosition = Math.min(maxPosition, (maxPosition) * scrollPercentage);
         
         scrollbarThumb.style.height = `${thumbHeight}px`;
         scrollbarThumb.style.top = `${thumbPosition}px`;
     }
 
-    // Initialize
+    // Function to update active menu item
+    function setActiveItem(index) {
+        // Send update to Lua first
+        sendToGame('menuSelect', {
+            item: menuItems[index].querySelector('a').textContent.trim(),
+            index: index
+        });
+
+        // Then force UI update through the same path
+        const event = {
+            data: {
+                type: 'forceUpdate',
+                index: index
+            }
+        };
+        window.dispatchEvent(new MessageEvent('message', event));
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (currentIndex > 0) {
+                currentIndex--;
+                setActiveItem(currentIndex);
+            }
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (currentIndex < menuItems.length - 1) {
+                currentIndex++;
+                setActiveItem(currentIndex);
+            }
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            // Send selection confirmation to game
+            sendToGame('menuActivate', {
+                item: menuItems[currentIndex].querySelector('a').textContent.trim(),
+                index: currentIndex
+            });
+        }
+    });
+
+    // Handle messages from game with improved reliability
+    window.addEventListener('message', function(event) {
+        console.log('Received message:', event.data);
+        
+        if (event.data.type === 'forceUpdate') {
+            // Force immediate UI update
+            currentIndex = event.data.index;
+            
+            // Clear all active states first
+            menuItems.forEach(item => {
+                item.classList.remove('active');
+                item.style.backgroundColor = '';
+                item.style.boxShadow = '';
+            });
+
+            // Set new active state
+            const activeItem = menuItems[currentIndex];
+            if (activeItem) {
+                activeItem.classList.add('active');
+                activeItem.style.backgroundColor = 'rgba(0, 102, 255, 0.2)';
+                activeItem.style.boxShadow = '0 0 15px rgba(0, 102, 255, 0.3)';
+                
+                // Ensure item is visible
+                activeItem.scrollIntoView({
+                    behavior: event.data.direction ? 'smooth' : 'auto',
+                    block: 'nearest'
+                });
+            }
+            
+            // Update scrollbar position
+            updateScrollbar();
+        } else if (event.data.type === 'menuActivate') {
+            // Handle menu activation
+            sendToGame('menuActivate', {
+                item: menuItems[currentIndex].querySelector('a').textContent.trim(),
+                index: currentIndex
+            });
+        }
+    });
+
+    // Initial setup
     updateScrollbar();
     menu.addEventListener('scroll', updateScrollbar);
-
-    // Global error handler
-    window.onerror = function(msg, url, line) {
-        console.log(`Error: ${msg} at ${url}:${line}`);
-        return false;
-    };
 }); 
