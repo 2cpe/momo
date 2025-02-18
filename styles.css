@@ -114,13 +114,18 @@ body {
     background: transparent;
 }
 
-.menu li:hover {
-    background-color: rgba(0, 102, 255, 0.15);
+.menu li.active {
+    background-color: rgba(0, 102, 255, 0.2) !important;
+    box-shadow: 0 0 15px rgba(0, 102, 255, 0.3) !important;
 }
 
-.menu li.active {
-    background-color: rgba(0, 102, 255, 0.2);
-    box-shadow: 0 0 15px rgba(0, 102, 255, 0.3);
+/* Remove any conflicting hover styles */
+.menu li:hover, .menu li.active {
+    box-shadow: none;
+}
+
+.menu li.active:hover {
+    box-shadow: 0 0 15px rgba(0, 102, 255, 0.3) !important;
 }
 
 .menu a {
@@ -138,10 +143,6 @@ body {
     opacity: 0.7;
     color: #0066ff;
     margin-left: 10px;
-}
-
-.menu li:hover, .menu li.active {
-    box-shadow: none;
 }
 
 .menu li, .menu li:hover, .menu li.active {

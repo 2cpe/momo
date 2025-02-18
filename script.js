@@ -35,21 +35,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function to update active menu item
     function setActiveItem(index) {
-        console.log('Setting active item:', index); // Debug log
+        console.log('Setting active item:', index);
         
         // Remove active class from all items
-        menuItems.forEach(item => item.classList.remove('active'));
-        
-        // Add active class to selected item
+        menuItems.forEach((item, i) => {
+            if (i === index) {
+                item.classList.add('active');
+                // Force style update
+                item.style.backgroundColor = 'rgba(0, 102, 255, 0.2)';
+                item.style.boxShadow = '0 0 15px rgba(0, 102, 255, 0.3)';
+            } else {
+                item.classList.remove('active');
+                item.style.backgroundColor = 'transparent';
+                item.style.boxShadow = 'none';
+            }
+        });
+
+        // Ensure scrolling into view
         if (menuItems[index]) {
-            menuItems[index].classList.add('active');
             menuItems[index].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            
-            // Send selected menu item to game
-            sendToGame('menuSelect', {
-                item: menuItems[index].querySelector('a').textContent.trim(),
-                index: index
-            });
         }
     }
 
@@ -79,15 +83,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Handle messages from game
     window.addEventListener('message', function(event) {
-        console.log('Received message:', event.data); // Debug log
+        console.log('Received message:', event.data);
         
         if (event.data.type === 'setActive') {
             // Ensure index is within bounds
             const newIndex = Math.min(Math.max(0, event.data.index), menuItems.length - 1);
             if (currentIndex !== newIndex) {
                 currentIndex = newIndex;
-                setActiveItem(currentIndex);
-                console.log('Updated menu index to:', currentIndex);
+                // Force immediate UI update
+                requestAnimationFrame(() => {
+                    setActiveItem(currentIndex);
+                    console.log('Updated menu index to:', currentIndex);
+                });
             }
         } else if (event.data.type === 'menuActivate') {
             // Handle menu activation
