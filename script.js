@@ -9,13 +9,30 @@ document.addEventListener('DOMContentLoaded', function() {
     const selfMenu = document.querySelector('.self-menu');
     let currentMenu = 'main';
 
-    // Modified to work with injection
+    // Add message handler for Lua communication
+    window.addEventListener('message', function(event) {
+        const data = event.data;
+        console.log('Received message:', data);
+
+        if (data.type === 'updateIndex') {
+            currentIndex = data.index;
+            updateUI(currentMenu, currentIndex);
+        } else if (data.type === 'switchMenu') {
+            showMenu(data.menu);
+        }
+    });
+
+    // Modified sendToGame to ensure UI sync
     function sendToGame(action, data) {
         try {
             if (window.invokeNative) {
                 window.invokeNative('sendMessage', JSON.stringify({
                     action: action,
-                    data: data
+                    data: {
+                        ...data,
+                        currentMenu: currentMenu,
+                        currentIndex: currentIndex
+                    }
                 }));
             } else {
                 console.log('Web action:', action, data);
@@ -48,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
         updateUI(menuType, currentIndex);
     }
 
-    // Handle key events
+    // Modified key handler to send updates to Lua
     document.addEventListener('keydown', function(e) {
         const currentItems = currentMenu === 'main' ? 
             mainMenu.querySelectorAll('li') : 
@@ -60,6 +77,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (currentIndex > 0) {
                     currentIndex--;
                     updateUI(currentMenu, currentIndex);
+                    sendToGame('updateIndex', { index: currentIndex });
                 }
                 break;
 
@@ -68,6 +86,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (currentIndex < currentItems.length - 1) {
                     currentIndex++;
                     updateUI(currentMenu, currentIndex);
+                    sendToGame('updateIndex', { index: currentIndex });
                 }
                 break;
 
