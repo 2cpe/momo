@@ -117,14 +117,16 @@ body {
 .menu li.active {
     background-color: rgba(0, 102, 255, 0.2) !important;
     box-shadow: 0 0 15px rgba(0, 102, 255, 0.3) !important;
+    transition: all 0.1s ease-out;
 }
 
-/* Remove any conflicting hover styles */
-.menu li:hover, .menu li.active {
-    box-shadow: none;
+/* Ensure hover doesn't interfere with active state */
+.menu li:hover:not(.active) {
+    background-color: rgba(0, 102, 255, 0.1);
 }
 
 .menu li.active:hover {
+    background-color: rgba(0, 102, 255, 0.2) !important;
     box-shadow: 0 0 15px rgba(0, 102, 255, 0.3) !important;
 }
 
