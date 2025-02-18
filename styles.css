@@ -54,6 +54,10 @@ body {
     scrollbar-width: none;
     -ms-overflow-style: none;
     padding: 0 15px;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
 }
 
 .menu ul {
@@ -108,26 +112,26 @@ body {
     padding: 12px 20px;
     color: #fff;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
     margin: 4px 0;
     position: relative;
-    background: transparent;
+    background-color: transparent !important;
+    box-shadow: none !important;
 }
 
 .menu li.active {
     background-color: rgba(0, 102, 255, 0.2) !important;
     box-shadow: 0 0 15px rgba(0, 102, 255, 0.3) !important;
-    transition: all 0.1s ease-out;
+    z-index: 1;
 }
 
-/* Ensure hover doesn't interfere with active state */
-.menu li:hover:not(.active) {
-    background-color: rgba(0, 102, 255, 0.1);
+/* Remove hover effects that might interfere */
+.menu li:hover {
+    background-color: transparent !important;
 }
 
 .menu li.active:hover {
     background-color: rgba(0, 102, 255, 0.2) !important;
-    box-shadow: 0 0 15px rgba(0, 102, 255, 0.3) !important;
 }
 
 .menu a {
