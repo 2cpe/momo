@@ -37,35 +37,23 @@ document.addEventListener('DOMContentLoaded', function() {
     function setActiveItem(index) {
         console.log('Setting active item:', index);
         
-        // Force DOM update
-        menuItems.forEach((item, i) => {
-            // Remove all active classes first
-            item.classList.remove('active');
-            // Clear any inline styles
-            item.style.removeProperty('background-color');
-            item.style.removeProperty('box-shadow');
-        });
-
-        // Set new active item
-        if (menuItems[index]) {
-            const activeItem = menuItems[index];
-            activeItem.classList.add('active');
-            
-            // Force visual update with inline styles
-            activeItem.style.cssText = `
-                background-color: rgba(0, 102, 255, 0.2) !important;
-                box-shadow: 0 0 15px rgba(0, 102, 255, 0.3) !important;
-            `;
-
-            // Scroll into view
-            activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-            // Send update to game
-            sendToGame('menuSelect', {
-                item: activeItem.querySelector('a').textContent.trim(),
-                index: index
+        requestAnimationFrame(() => {
+            menuItems.forEach((item, i) => {
+                if (i === index) {
+                    item.classList.add('active');
+                    item.style.backgroundColor = 'rgba(0, 102, 255, 0.2)';
+                    item.style.boxShadow = '0 0 15px rgba(0, 102, 255, 0.3)';
+                } else {
+                    item.classList.remove('active');
+                    item.style.backgroundColor = 'transparent';
+                    item.style.boxShadow = 'none';
+                }
             });
-        }
+            
+            if (menuItems[index]) {
+                menuItems[index].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        });
     }
 
     // Keyboard navigation
@@ -92,25 +80,33 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Handle messages from game with forced update
+    // Handle messages from game
     window.addEventListener('message', function(event) {
         console.log('Received message:', event.data);
         
         if (event.data.type === 'setActive') {
-            const newIndex = Math.min(Math.max(0, event.data.index), menuItems.length - 1);
-            
-            // Force update even if index hasn't changed
-            currentIndex = newIndex;
-            
-            // Use RAF for smooth animation
-            window.requestAnimationFrame(() => {
-                setActiveItem(currentIndex);
-                // Double RAF to ensure render
-                window.requestAnimationFrame(() => {
-                    // Force repaint
-                    menu.style.transform = 'translateZ(0)';
-                });
+            // Force a complete UI refresh
+            menuItems.forEach((item, i) => {
+                if (i === event.data.index) {
+                    item.classList.add('active');
+                    // Force immediate style update
+                    item.style.backgroundColor = 'rgba(0, 102, 255, 0.2)';
+                    item.style.boxShadow = '0 0 15px rgba(0, 102, 255, 0.3)';
+                    item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    currentIndex = i; // Update current index
+                } else {
+                    item.classList.remove('active');
+                    item.style.backgroundColor = 'transparent';
+                    item.style.boxShadow = 'none';
+                }
             });
+            
+            // Force a DOM reflow
+            menu.style.display = 'none';
+            menu.offsetHeight; // Force reflow
+            menu.style.display = '';
+            
+            console.log('Updated active item to:', event.data.index);
         } else if (event.data.type === 'menuActivate') {
             // Handle menu activation
             sendToGame('menuActivate', {
