@@ -7,14 +7,22 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Function to send messages to Lua
     function sendToGame(action, data) {
-        if (window.invokeNative) {
-            fetch(`https://${GetParentResourceName()}/${action}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
+        try {
+            if (window.invokeNative) {
+                fetch(`https://${GetParentResourceName()}/${action}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                }).catch(err => console.error('Failed to send to game:', err));
+            } else {
+                // Fallback for injected scenario
+                console.log('Sending to game:', action, data);
+                window.postMessage({ type: action, ...data }, '*');
+            }
+        } catch (err) {
+            console.error('Error sending to game:', err);
         }
     }
 
@@ -77,41 +85,51 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Handle messages from game with improved reliability
     window.addEventListener('message', function(event) {
-        console.log('Received message:', event.data);
+        const data = event.data;
         
-        if (event.data.type === 'forceUpdate') {
-            // Force immediate UI update
-            currentIndex = event.data.index;
+        // Add more robust checking
+        if (!data || typeof data !== 'object') return;
+        
+        console.log('Received message:', data);
+        
+        if (data.type === 'forceUpdate' || data.type === 'setActive') {
+            // Ensure index is a number and valid
+            const newIndex = parseInt(data.index);
+            if (isNaN(newIndex) || newIndex < 0 || newIndex >= menuItems.length) return;
             
-            // Clear all active states first
+            currentIndex = newIndex;
+            
+            // Clear all active states
             menuItems.forEach(item => {
                 item.classList.remove('active');
-                item.style.backgroundColor = '';
-                item.style.boxShadow = '';
             });
 
             // Set new active state
             const activeItem = menuItems[currentIndex];
             if (activeItem) {
                 activeItem.classList.add('active');
-                activeItem.style.backgroundColor = 'rgba(0, 102, 255, 0.2)';
-                activeItem.style.boxShadow = '0 0 15px rgba(0, 102, 255, 0.3)';
                 
-                // Ensure item is visible
+                // Smooth scroll only if direction is specified
                 activeItem.scrollIntoView({
-                    behavior: event.data.direction ? 'smooth' : 'auto',
+                    behavior: data.direction ? 'smooth' : 'auto',
                     block: 'nearest'
                 });
             }
             
-            // Update scrollbar position
             updateScrollbar();
-        } else if (event.data.type === 'menuActivate') {
+        } else if (data.type === 'menuActivate') {
             // Handle menu activation
             sendToGame('menuActivate', {
                 item: menuItems[currentIndex].querySelector('a').textContent.trim(),
                 index: currentIndex
             });
+        }
+    });
+
+    // Add visibility handler
+    window.addEventListener('message', function(event) {
+        if (event.data.type === 'setVisible') {
+            document.body.style.display = event.data.visible ? 'flex' : 'none';
         }
     });
 
